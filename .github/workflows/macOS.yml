@@ -1,0 +1,50 @@
+name: macOS
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+  workflow_dispatch:
+    branches: '*'
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install the JSON-C library
+      run: brew install json-c
+
+    - name: Run CMake
+      run: |
+        cd build
+        chmod +x ./build_macOS.sh
+        ./build_macOS.sh
+        cd ..
+
+    - name: Run GNU Make with GNU compiler
+      run: |
+        cd build
+        mkdir -p bin
+        mkdir -p bin/Debug
+        cd Mac
+        make VERBOSE=1 -j$(getconf _NPROCESSORS_ONLN)
+        cd ../..
+
+    - name: Test the program and collect output
+      run: |
+        cd build/Mac && ./ubuntu_fetcher --list-releases > sample_output.txt && cd ../..
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: macOS_executable
+        path: build/Mac/ubuntu_fetcher
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: macOS_sample_output
+        path: build/Mac/sample_output.txt
